@@ -1,6 +1,7 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.SqlServer;
 using WebApplication1.Data;
 using WebApplication1.Models;
 using WebApplication1.Repositories;
@@ -10,8 +11,12 @@ using WebApplication1.Validators;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseInMemoryDatabase("UserDb"));
+builder.Services.AddDbContext<ApplicationDbContext>(options => {
+    if (builder.Environment.IsDevelopment())
+        options.UseInMemoryDatabase("UserDb");
+    else
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
