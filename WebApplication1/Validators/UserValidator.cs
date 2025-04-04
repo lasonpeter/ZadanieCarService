@@ -7,9 +7,11 @@ namespace WebApplication1.Validators
     public class UserValidator : AbstractValidator<User>
     {
         private readonly IUserRepository _userRepository;
+        private readonly ILogger<UserValidator> _logger; // Add logger
 
-        public UserValidator(IUserRepository userRepository)
+        public UserValidator(IUserRepository userRepository,ILogger<UserValidator> logger)
         {
+            _logger = logger;
             _userRepository = userRepository;
 
             RuleFor(x => x.FirstName)

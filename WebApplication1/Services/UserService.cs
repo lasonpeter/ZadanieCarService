@@ -22,37 +22,79 @@ public class UserService : IUserService
         return await _userRepository.GetAllAsync();
     }
 
-    public async Task<User?> GetUserByIdAsync(int id)
+    public Task<(IEnumerable<User> Users, int TotalCount)> GetUsersAsync(int pageIndex, int pageSize)
+    {
+        return _userRepository.GetUsersAsync(pageIndex, pageSize);
+    }
+
+    public async Task<User?> GetUserByIdAsync(Guid id)
     {
         return await _userRepository.GetByIdAsync(id);
     }
 
     public async Task<User> CreateUserAsync(User user)
     {
+        using var scope = _logger.BeginScope(new Dictionary<string, object>
+        {
+            ["CorrelationId"] = Guid.NewGuid(),
+            ["Operation"] = "CreateUser"
+        });
+
+        // Ensure a new ID is generated server-side
+        user.Id = Guid.NewGuid();
+        _logger.LogInformation("Starting validation for user creation: {@UserProperties}", 
+            new { user.FirstName, user.LastName, user.Email, user.PhoneNumber });
+
         var validationResult = await _validator.ValidateAsync(user);
+        
         if (!validationResult.IsValid)
         {
-            _logger.LogError($"Validation failed for user: {user}. Errors: {validationResult.Errors}");
+            foreach (var error in validationResult.Errors)
+            {
+                _logger.LogError("Validation error for property {Property}: {Error}, Attempted value: {Value}", 
+                    error.PropertyName, error.ErrorMessage, error.AttemptedValue);
+            }
+            _logger.LogError("User validation failed. Total validation errors: {ErrorCount}", validationResult.Errors.Count);
             throw new ValidationException(validationResult.Errors);
         }
-        return await _userRepository.CreateAsync(user);
+
+        _logger.LogInformation("User validation successful, proceeding with creation");
+        var createdUser = await _userRepository.CreateAsync(user);
+        _logger.LogInformation("User created successfully with ID: {UserId}", createdUser.Id);
+        
+        return createdUser;
     }
 
-    public async Task UpdateUserAsync(int id, User user)
+    public async Task UpdateUserAsync(Guid id, User user)
     {
+        using var scope = _logger.BeginScope(new Dictionary<string, object>
+        {
+            ["CorrelationId"] = Guid.NewGuid(),
+            ["Operation"] = "UpdateUser",
+            ["UserId"] = id
+        });
+
+        _logger.LogInformation("Starting validation for user update. ID: {UserId}", id);
+
         var validationResult = await _validator.ValidateAsync(user);
         if (!validationResult.IsValid)
         {
-            _logger.LogError($"Validation failed for user with ID {id}. Errors: {validationResult.Errors}");
+            foreach (var error in validationResult.Errors)
+            {
+                _logger.LogError("Validation error for property {Property}: {Error}, Attempted value: {Value}", 
+                    error.PropertyName, error.ErrorMessage, error.AttemptedValue);
+            }
+            _logger.LogError("User validation failed for update. Total validation errors: {ErrorCount}", validationResult.Errors.Count);
             throw new ValidationException(validationResult.Errors);
         }
-        user.Id = id;
+
+        _logger.LogInformation("User validation successful, proceeding with update");
         await _userRepository.UpdateAsync(user);
+        _logger.LogInformation("User updated successfully");
     }
 
-    public async Task DeleteUserAsync(int id)
+    public async Task DeleteUserAsync(Guid id)
     {
         await _userRepository.DeleteAsync(id);
-        _logger.LogInformation($"User with ID {id} deleted successfully.");
     }
 }

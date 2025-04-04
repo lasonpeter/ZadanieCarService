@@ -12,44 +12,43 @@ using WebApplication1.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var loggerConfiguration = new LoggerConfiguration()
-    .MinimumLevel.Information()
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-    .Enrich.FromLogContext()
-    .WriteTo.File(
-        path: "logs/log_.txt",
-        rollingInterval: RollingInterval.Day,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
+// Ensure logs directory exists
+Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "logs"));
 
-//Can be also made to always log to console
-if (builder.Environment.IsDevelopment())
+// Clear any existing log files
+if (Directory.Exists("logs"))
 {
-    loggerConfiguration.WriteTo.Console();
+    foreach (var file in Directory.GetFiles("logs", "*.txt"))
+    {
+        try { File.Delete(file); } catch { }
+    }
 }
 
-Log.Logger = loggerConfiguration.CreateLogger();
+// Configure Serilog
+var logConfig = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration);
+
+Log.Logger = logConfig.CreateLogger();
 
 builder.Host.UseSerilog();
 
 // Add services to the container.
-builder.Services.AddDbContext<ApplicationDbContext>(options => {
-    if (builder.Environment.IsDevelopment())
-        options.UseInMemoryDatabase("UserDb");
-    else
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
+builder.Services.AddControllers()
+    .AddFluentValidation(fv => 
+    {
+        fv.DisableDataAnnotationsValidation = true;
+        fv.ImplicitlyValidateChildProperties = false;
+        fv.AutomaticValidationEnabled = false;
+    });
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IValidator<User>, UserValidator>();
 
-builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddFluentValidationClientsideAdapters();
-builder.Services.AddTransient<IValidator<User>, UserValidator>();
-
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseInMemoryDatabase("InMemoryDb"));
 
 var app = builder.Build();
 
@@ -60,10 +59,26 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
+
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+
+
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

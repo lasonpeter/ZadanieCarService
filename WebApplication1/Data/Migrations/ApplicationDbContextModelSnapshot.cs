@@ -9,10 +9,7 @@ namespace WebApplication1.Data.Migrations
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
-            modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.3")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
-
+          
             modelBuilder.Entity("WebApplication1.Models.User", b =>
             {
                 b.Property<int>("Id")
