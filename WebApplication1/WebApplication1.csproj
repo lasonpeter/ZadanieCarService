@@ -34,4 +34,8 @@
       <Folder Include="Validators\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="Services\UserService.cs.old" />
+    </ItemGroup>
+
 </Project>

@@ -9,21 +9,21 @@ using WebApplication1.Services;
 using WebApplication1.Repositories;
 
 namespace testing;
-
 public class UserServiceTests
 {
     private Mock<IUserRepository> _mockUserRepository;
     private Mock<IValidator<User>> _mockValidator;
     private UserService _userService;
     private Mock<ILogger<UserService>> _mockLogger;
+
     [SetUp]
     public void Setup()
     {
         _mockUserRepository = new Mock<IUserRepository>();
         _mockValidator = new Mock<IValidator<User>>();
         _mockLogger = new Mock<ILogger<UserService>>();
-        
-        _userService = new UserService(_mockUserRepository.Object, _mockValidator.Object,_mockLogger.Object);
+
+        _userService = new UserService(_mockUserRepository.Object, _mockValidator.Object, _mockLogger.Object);
     }
 
     [Test]
@@ -32,8 +32,8 @@ public class UserServiceTests
         // Arrange
         var expectedUsers = new List<User>
         {
-            new User { Id = 1, FirstName = "Test User 1", Email = "test1@example.com", PhoneNumber = "1234567890" },
-            new User { Id = 2, FirstName = "Test User 2", Email = "test2@example.com", PhoneNumber = "0987654321" }
+            new User { Id = Guid.NewGuid(), FirstName = "Test User 1", Email = "test1@example.com", PhoneNumber = "1234567890" },
+            new User { Id = Guid.NewGuid(), FirstName = "Test User 2", Email = "test2@example.com", PhoneNumber = "0987654321" }
         };
         _mockUserRepository.Setup(repo => repo.GetAllAsync()).ReturnsAsync(expectedUsers);
 
@@ -49,7 +49,7 @@ public class UserServiceTests
     public async Task GetUserByIdAsync_WithValidId_ShouldReturnUser()
     {
         // Arrange
-        int userId = 1;
+        var userId = Guid.NewGuid();
         var expectedUser = new User { Id = userId, FirstName = "Test User", Email = "test@example.com", PhoneNumber = "1234567890" };
         _mockUserRepository.Setup(repo => repo.GetByIdAsync(userId)).ReturnsAsync(expectedUser);
 
@@ -65,7 +65,7 @@ public class UserServiceTests
     public async Task GetUserByIdAsync_WithInvalidId_ShouldReturnNull()
     {
         // Arrange
-        int userId = 999;
+        var userId = Guid.NewGuid();
         _mockUserRepository.Setup(repo => repo.GetByIdAsync(userId)).ReturnsAsync((User?)null);
 
         // Act
@@ -101,8 +101,9 @@ public class UserServiceTests
         var invalidUser = new User { FirstName = "", Email = "invalid-email", PhoneNumber = "" };
         var validationFailures = new List<FluentValidation.Results.ValidationFailure>
         {
-            new FluentValidation.Results.ValidationFailure("Name", "Name is required"),
-            new FluentValidation.Results.ValidationFailure("Email", "Invalid email format")
+            new FluentValidation.Results.ValidationFailure("FirstName", "First name is required"),
+            new FluentValidation.Results.ValidationFailure("Email", "Email is not valid"),
+            new FluentValidation.Results.ValidationFailure("PhoneNumber", "Phone number is required")
         };
         var validationResult = new FluentValidation.Results.ValidationResult(validationFailures);
         _mockValidator.Setup(validator => validator.ValidateAsync(invalidUser, default)).ReturnsAsync(validationResult);
@@ -117,7 +118,7 @@ public class UserServiceTests
     public async Task UpdateUserAsync_WithValidUser_ShouldUpdateUser()
     {
         // Arrange
-        int userId = 1;
+        var userId = Guid.NewGuid();
         var user = new User { Id = userId, FirstName = "Updated User", Email = "updated@example.com", PhoneNumber = "1234567890" };
         var validationResult = new FluentValidation.Results.ValidationResult();
         _mockValidator.Setup(validator => validator.ValidateAsync(user, default)).ReturnsAsync(validationResult);
@@ -135,16 +136,17 @@ public class UserServiceTests
     public void UpdateUserAsync_WithInvalidUser_ShouldThrowValidationException()
     {
         // Arrange
-        int userId = 1;
+        var userId = Guid.NewGuid();
         var invalidUser = new User { Id = userId, FirstName = "", Email = "invalid-email", PhoneNumber = "" };
         var validationFailures = new List<FluentValidation.Results.ValidationFailure>
         {
-            new FluentValidation.Results.ValidationFailure("Name", "Name is required"),
-            new FluentValidation.Results.ValidationFailure("Email", "Invalid email format")
+            new FluentValidation.Results.ValidationFailure("FirstName", "First name is required"),
+            new FluentValidation.Results.ValidationFailure("Email", "Email is not valid"),
+            new FluentValidation.Results.ValidationFailure("PhoneNumber", "Phone number is required")
         };
         var validationResult = new FluentValidation.Results.ValidationResult(validationFailures);
         _mockValidator.Setup(validator => validator.ValidateAsync(invalidUser, default)).ReturnsAsync(validationResult);
-        
+
         // Act & Assert
         Assert.ThrowsAsync<ValidationException>(() => _userService.UpdateUserAsync(userId, invalidUser));
         _mockValidator.Verify(validator => validator.ValidateAsync(invalidUser, default), Times.Once);
@@ -155,7 +157,7 @@ public class UserServiceTests
     public async Task DeleteUserAsync_WithExistingUser_ShouldDeleteUser()
     {
         // Arrange
-        int userId = 1;
+        var userId = Guid.NewGuid();
         _mockUserRepository.Setup(repo => repo.DeleteAsync(userId)).Returns(Task.CompletedTask);
 
         // Act

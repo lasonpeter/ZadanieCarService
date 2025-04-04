@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using WebApplication1.Models;
 using WebApplication1.Services;
@@ -42,7 +45,7 @@ public class UsersController : ControllerBase
         try
         {
             var createdUser = await _userService.CreateUserAsync(user);
-            _logger.LogInformation("User created successfully with ID: {UserId}", createdUser.Id);
+            _logger.LogInformation("User created successfully with ID: {UserId}", createdUser.Id.ToString());
             return CreatedAtAction(nameof(GetUser), new { id = createdUser.Id }, createdUser);
         }
         catch (ValidationException ex)
