@@ -15,23 +15,26 @@ namespace WebApplication1.Validators
             _userRepository = userRepository;
 
             RuleFor(x => x.FirstName)
-                .NotEmpty()
+                .NotEmpty().
+                MinimumLength(3)
                 .MaximumLength(100);
 
             RuleFor(x => x.LastName)
                 .NotEmpty()
+                .MinimumLength(3)
                 .MaximumLength(100);
-
             RuleFor(x => x.Email)
                 .NotEmpty()
                 .EmailAddress()
                 .MaximumLength(255)
-                /*.MustAsync(async (email, cancellation) => !await _userRepository.ExistsByEmailAsync(email))*/
-                .WithMessage("A user with this email already exists.");
+                .WithMessage("A user with this email already exists.")
+                .Custom((email, context) => _userRepository.ExistsByEmail(email));
+                
 
             RuleFor(x => x.PhoneNumber)
                 .NotEmpty()
                 .Length(9)
+                .Matches("^[0-9]+$").WithMessage("The phoneNumber field must contain only numbers.")
                 .Custom((s, context) => _userRepository.ExistsByPhoneNumber(s));
         }
     }

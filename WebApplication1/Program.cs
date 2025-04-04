@@ -52,12 +52,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+
+/*if (app.Environment.IsDevelopment())
+{*/
+    //THIS IS ENABLED TO ALLOW FOR TESTING, IN PRODUCTION, THIS SHOULD BE DISABLED
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+/*}*/
 
 
 
