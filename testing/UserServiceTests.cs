@@ -1,6 +1,9 @@
 using NUnit.Framework;
 using Moq;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Events;
 using WebApplication1.Models;
 using WebApplication1.Services;
 using WebApplication1.Repositories;
@@ -12,13 +15,15 @@ public class UserServiceTests
     private Mock<IUserRepository> _mockUserRepository;
     private Mock<IValidator<User>> _mockValidator;
     private UserService _userService;
-
+    private Mock<ILogger<UserService>> _mockLogger;
     [SetUp]
     public void Setup()
     {
         _mockUserRepository = new Mock<IUserRepository>();
         _mockValidator = new Mock<IValidator<User>>();
-        _userService = new UserService(_mockUserRepository.Object, _mockValidator.Object);
+        _mockLogger = new Mock<ILogger<UserService>>();
+        
+        _userService = new UserService(_mockUserRepository.Object, _mockValidator.Object,_mockLogger.Object);
     }
 
     [Test]
