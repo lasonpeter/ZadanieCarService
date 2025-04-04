@@ -1,4 +1,6 @@
 using FluentValidation;
+using Serilog;
+using Serilog.Events;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.SqlServer;
@@ -9,6 +11,25 @@ using WebApplication1.Services;
 using WebApplication1.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var loggerConfiguration = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.File(
+        path: "logs/log_.txt",
+        rollingInterval: RollingInterval.Day,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
+
+//Can be also made to always log to console
+if (builder.Environment.IsDevelopment())
+{
+    loggerConfiguration.WriteTo.Console();
+}
+
+Log.Logger = loggerConfiguration.CreateLogger();
+
+builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options => {
