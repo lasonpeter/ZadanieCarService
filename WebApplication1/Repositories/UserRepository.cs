@@ -45,4 +45,14 @@ public class UserRepository : IUserRepository
             await _context.SaveChangesAsync();
         }
     }
+    
+    public bool ExistsByEmail(string email)
+    {
+        return _context.Users.Any(u => u.Email == email);
+    }
+
+    public bool ExistsByPhoneNumber(string phoneNumber)
+    {
+        return _context.Users.Any(u => u.PhoneNumber == phoneNumber);
+    }
 }
